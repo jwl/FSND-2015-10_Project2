@@ -8,40 +8,43 @@
 
 
 -- Create tournaments database (and drop it if it already exists)
-DROP DATABASE IF EXISTS tournaments;
-CREATE DATABASE tournaments;
+DROP DATABASE IF EXISTS tournament;
+CREATE DATABASE tournament;
 
 -- Connect to our new database
-\c tournaments
+\c tournament
 
 -- Create tables
-CREATE TABLE registered_players (
-	player_id SERIAL PRIMARY KEY,
-	player_name TEXT
+CREATE TABLE players (
+	p_id SERIAL PRIMARY KEY,
+	p_name TEXT
 );
 
-CREATE TABLE tournaments (
+-- for clarity's sake, in the context of tables call tournaments 'tourneys'
+CREATE TABLE tourneys (
 	tourney_id SERIAL PRIMARY KEY,
 	tourney_desc TEXT
 );
 
 CREATE TABLE matches (
 	match_id SERIAL PRIMARY KEY,
-	t_id INTEGER references tournaments(tourney_id),
-	p1 INTEGER references registered_players(player_id),
-	p2 INTEGER references registered_players(player_id),
+	t_id INTEGER references tourneys(tourney_id),
+	p1 INTEGER references players(p_id),
+	p2 INTEGER references players(p_id),
 	-- Possible values for m_results:
-	-- * "unplayed"
-	-- * "in-progress"
-	-- * "p1" (p1 is winner)
-	-- * "p2" (p2 is winner)
-	-- * "tie"
-	m_results text
+	-- * -2: "unplayed"
+	-- * -1: "in-progress"
+	-- * 0: "tie"
+	-- * 1: p1 is winner
+	-- * 2: p2 is winner
+	-- Note: For this project, all matches in this table are assumed to be
+	-- completed with either a winner or a tie.
+	m_results INTEGER
 );
 
 
--- CREATE TABLE posts ( content TEXT,
-                     -- time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                     -- id SERIAL );
+-- Views
+-- CREATE VIEW
+
 
 
