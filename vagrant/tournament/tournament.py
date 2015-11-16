@@ -29,21 +29,20 @@ def deletePlayers():
     conn.close()
 
 
-
 def countPlayers():
     """Returns the number of players currently registered."""
     conn = connect()
     c = conn.cursor()
-    c.execute('''
-        SELECT count(*) as num
-        FROM players
-    ''')
+    c.execute(
+        '''
+            SELECT count(*) as num
+            FROM players
+        '''
+    )
     playerCount = c.fetchone()[0]
     conn.commit()
     conn.close()
     return playerCount
-
-
 
 
 def registerPlayer(name):
@@ -62,12 +61,11 @@ def registerPlayer(name):
     conn.close()
 
 
-
 def playerStandings():
     """Returns a list of the players and their win records, sorted by wins.
 
-    The first entry in the list should be the player in first place, or a player
-    tied for first place if there is currently a tie.
+    The first entry in the list should be the player in first place, or a
+    player tied for first place if there is currently a tie.
 
     Returns:
       A list of tuples, each of which contains (id, name, wins, matches):
@@ -78,37 +76,18 @@ def playerStandings():
     """
     conn = connect()
     c = conn.cursor()
-    c.execute('''
-        SELECT m1.p_id, m1.p_name, m2.wins, m1.total_matches
-        FROM
-        (
+    c.execute(
+        '''
             SELECT
-                players.p_id,
-                players.p_name,
-                count(matches.match_id) as total_matches
-            FROM players
-            LEFT JOIN matches
-                ON players.p_id = matches.p1 OR players.p_id = matches.p2
-            GROUP BY players.p_id
-        ) m1 -- Table with total matches
-        JOIN
-        (
-            SELECT players.p_id, count(matches.match_id) as wins
-            FROM players
-            LEFT JOIN matches
-                ON
-                (players.p_id = p1 AND matches.m_results = 1) OR
-                (players.p_id = p2 AND matches.m_results = 2)
-            GROUP BY players.p_id
-        ) m2
-        ON
-        m1.p_id = m2.p_id
-        GROUP BY m1.p_id, m1.p_name, m1.total_matches, m2.wins
-        ORDER BY m2.wins DESC
-        ;
-    ''')
+                p_id
+                , p_name
+                , wins
+                , total_matches
+            FROM
+                standings;
+        '''
+    )
     results = c.fetchall()
-    # print results
     conn.close()
     return results
 
@@ -125,11 +104,12 @@ def reportMatch(winner, loser):
     """
     conn = connect()
     c = conn.cursor()
-    c.execute('''
-        INSERT INTO matches
-            (p1, p2, m_results) VALUES
-            (%s, %s, 1)
-        ;
+    c.execute(
+        '''
+            INSERT INTO matches
+                (p1, p2, m_results) VALUES
+                (%s, %s, 1)
+            ;
         ''',
         (winner, loser)
     )
@@ -154,10 +134,12 @@ def swissPairings():
     """
 
     # Use views odd_standings and even_standings to generate swiss pairs
+    # See this post for original idea behind implementation:
+    # https://goo.gl/T1cB6B
     conn = connect()
     c = conn.cursor()
     c.execute('''
-        SELECT 
+        SELECT
             odd_standings.p_id as oddPlayerID
             , odd_standings.p_name as oddPlayerName
             , even_standings.p_id as evenPlayerID
@@ -167,12 +149,9 @@ def swissPairings():
             JOIN
             even_standings
             ON
-                odd_standings.match_number = even_standings.match_number
+            odd_standings.match_number = even_standings.match_number
         ;
-        '''
-    )
+    ''')
     pairings = c.fetchall()
     conn.close()
     return pairings
-
-
