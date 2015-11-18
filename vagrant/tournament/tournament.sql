@@ -8,6 +8,13 @@
 
 
 -- Create tournaments database (and drop it if it already exists)
+SELECT pg_terminate_backend(pg_stat_activity.pid)
+FROM pg_stat_activity
+WHERE pg_stat_activity.datname = 'tournament'
+    AND pid <> pg_backend_pid();
+
+\c vagrant;
+
 DROP DATABASE IF EXISTS tournament;
 CREATE DATABASE tournament;
 
@@ -17,7 +24,7 @@ CREATE DATABASE tournament;
 -- Create tables
 CREATE TABLE players (
     p_id SERIAL PRIMARY KEY,
-    p_name TEXT
+    p_name TEXT NOT NULL
 );
 
 -- for clarity's sake, in the context of tables call tournaments 'tourneys'
@@ -28,9 +35,9 @@ CREATE TABLE tourneys (
 
 CREATE TABLE matches (
     match_id SERIAL PRIMARY KEY,
-    t_id INTEGER references tourneys(tourney_id),
-    p1 INTEGER references players(p_id),
-    p2 INTEGER references players(p_id),
+    t_id INTEGER REFERENCES tourneys(tourney_id),
+    p1 INTEGER REFERENCES players(p_id) ON DELETE CASCADE,
+    p2 INTEGER REFERENCES players(p_id) ON DELETE CASCADE,
     -- Possible values for m_results:
     -- * -2: "unplayed"
     -- * -1: "in-progress"
@@ -39,7 +46,8 @@ CREATE TABLE matches (
     -- * 2: p2 is winner
     -- Note: For this project, all matches in this table are assumed to be
     -- completed with either a winner or a tie.
-    m_results INTEGER
+    m_results INTEGER,
+    CHECK (p1 <> p2)
 );
 
 
@@ -47,7 +55,7 @@ CREATE TABLE matches (
 
 -- View for playerStandings()
 CREATE VIEW standings AS
-    SELECT 
+    SELECT
         ROW_NUMBER() OVER() as rank,
         m1.p_id, m1.p_name, m2.wins, m1.total_matches
     FROM
@@ -79,7 +87,7 @@ CREATE VIEW standings AS
 
 
 -- View for showing odd-numbered standings in placements
-CREATE VIEW odd_standings AS 
+CREATE VIEW odd_standings AS
     SELECT
         standings.rank, p_id, p_name, wins, ROW_NUMBER() OVER() as match_number
     FROM
@@ -90,7 +98,7 @@ CREATE VIEW odd_standings AS
 ;
 
 -- View for showing even-numbered standings in placements
-CREATE VIEW even_standings AS 
+CREATE VIEW even_standings AS
     SELECT
         standings.rank, p_id, p_name, wins, ROW_NUMBER() OVER() as match_number
     FROM
